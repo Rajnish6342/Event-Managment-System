@@ -4,8 +4,6 @@ const hpp = require("hpp");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 
-// const AppError = require("./utils/appError");
-// const globalErrorHandler = require("./controllers/errorController");
 const eventRouter = require("./routes/eventRoutes");
 const userRouter = require("./routes/userRoutes");
 
@@ -25,24 +23,17 @@ mongoose
 
 app.use(express.json({ limit: "10kb" }));
 
-// Data sanitization
+// sanitization
 app.use(mongoSanitize());
 
-// Prevent parameter pollution
+//  parameter pollution
 app.use(
   hpp({
-    whitelist: [
-      "duration",
-      "ratingsQuantity",
-      "ratingsAverage",
-      "maxGroupSize",
-      "difficulty",
-      "price",
-    ],
+    whitelist: ["sort", "page", "size", "start", "end", "sort"],
   })
 );
 
-// 3) ROUTES
+// route
 app.get("/", (req, res) => {
   res.send("API Running");
 });
@@ -52,8 +43,6 @@ app.use("/api/user", userRouter);
 app.all("*", (req, res, next) => {
   next(`Can't find ${req.originalUrl} on this server!`, 404);
 });
-
-//app.use(globalErrorHandler);
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {

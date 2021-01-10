@@ -18,14 +18,13 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, "Please provide a password"],
-    minlength: 8,
     select: false,
   },
   passwordConfirm: {
     type: String,
     required: [true, "Please confirm your password"],
     validate: {
-      // This only works on CREATE and SAVE!!!
+      // works on CREATE and SAVE!!!
       validator: function (el) {
         return el === this.password;
       },
@@ -38,13 +37,13 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre("save", async function (next) {
-  // if password was actually modified
+  // if password was  modified
   if (!this.isModified("password")) return next();
 
-  // Hash the password with cost of 12
+  // Hash the password
   this.password = await bcrypt.hash(this.password, 12);
 
-  // Delete passwordConfirm field
+  // Delete passwordConfirm
   this.passwordConfirm = undefined;
   next();
 });

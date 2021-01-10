@@ -3,7 +3,6 @@ const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const User = require("./../models/userModel");
 const catchAsync = require("./../utils/catchAsync");
-const sendEmail = require("./../utils/email");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -23,7 +22,6 @@ const createSendToken = (user, statusCode, res) => {
 
   res.cookie("jwt", token, cookieOptions);
 
-  // Remove password from output
   user.password = undefined;
 
   res.status(statusCode).json({
@@ -36,6 +34,13 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
+  const check = await User.find({ email: req.body.email });
+  if (check) {
+    return res.status(401).json({
+      status: "fail",
+      msg: "email already exists",
+    });
+  }
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
@@ -60,12 +65,19 @@ exports.login = catchAsync(async (req, res, next) => {
     return res.status(401).json({ msg: "Incorrect Credentials" });
   }
 
-  // 3) If everything ok, send token to client
+  // send token to client
   createSendToken(user, 200, res);
 });
 
+exports.logout = catchAsync(async (req, res, next) => {
+  res.status(200).json({
+    status: "success",
+    token: null,
+  });
+});
+
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
+  //  Get token
   let token;
   if (
     req.headers.authorization &&
@@ -78,10 +90,10 @@ exports.protect = catchAsync(async (req, res, next) => {
     return res.status(401).json({ msg: "You are not Logged in!" });
   }
 
-  // 2) Verification token
+  // Verify token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  // 3) Check if user still exists
+  //  user still exists
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
     res.status(401).json({ msg: "user doesnt exist" });
@@ -112,27 +124,10 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.`;
 
-  try {
-    await sendEmail({
-      email: user.email,
-      subject: "Your password reset token (valid for 10 min)",
-      message,
-    });
-
-    res.status(200).json({
-      status: "success",
-      message: "Token sent to email!",
-    });
-  } catch (err) {
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save({ validateBeforeSave: false });
-
-    return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
-    );
-  }
+  res.status(200).json({
+    status: "success",
+    message,
+  });
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
