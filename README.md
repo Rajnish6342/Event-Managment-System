@@ -7,9 +7,10 @@ Event Management System API for Logicwind Practical Interview.
 git clone https://github.com/Rajnish6342/Event-Managment-System.git.
 
 ```bash
-npm start
-   or
-npm run dev
+1. npm install
+2. npm start
+      or
+   npm run dev
 ```
 
 ## Usage
